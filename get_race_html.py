@@ -1,6 +1,10 @@
 """
 race_urlに含まれるURLを利用して、htmlを取得する
 """
+import datetime
+import pytz
+now_datetime = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -25,8 +29,13 @@ def my_makedirs(path):
         os.makedirs(path)
 
 def get_race_html():
-    for year in range(2008, 2020):
+    # 去年までのデータ
+    for year in range(2008, now_datetime.year):
         for month in range(1, 13):
+                get_race_html_by_year_and_mon(year,month)
+    # 今年のデータ
+    for year in range(now_datetime.year, now_datetime.year+1):
+        for month in range(1, now_datetime.month+1):
                 get_race_html_by_year_and_mon(year,month)
 
 def get_race_html_by_year_and_mon(year,month):

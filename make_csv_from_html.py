@@ -1,6 +1,30 @@
 """
 race_htmlに含まれるhtmlを利用して、データを生成する
 """
+import datetime
+import pytz
+now_datetime = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
+
+from bs4 import BeautifulSoup
+import numpy as np
+import pandas as pd
+
+import time
+import re
+import os
+from os import path
+OWN_FILE_NAME = path.splitext(path.basename(__file__))[0]
+RACR_URL_DIR = "race_url"
+RACR_HTML_DIR = "race_html"
+CSV_DIR = "csv"
+
+import logging
+formatter = "%(asctime)s [%(levelname)s]\t%(message)s" # フォーマットを定義
+#formatter_func = "%(asctime)s\t[%(levelname)8s]\t%(message)s from %(func)" # フォーマットを定義
+logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter)
+logger = logging.getLogger(__name__) #ファイルの名前を渡す
+
+
 race_data_columns=[
     'race_id',
     'race_round',
@@ -48,48 +72,20 @@ horse_data_columns=[
     'owner_id'
 ]
 
-
-from bs4 import BeautifulSoup
-import numpy as np
-import pandas as pd
-
-import time
-import re
-import os
-from os import path
-OWN_FILE_NAME = path.splitext(path.basename(__file__))[0]
-RACR_URL_DIR = "race_url"
-RACR_HTML_DIR = "race_html"
-CSV_DIR = "csv"
-
-import logging
-formatter = "%(asctime)s [%(levelname)s]\t%(message)s" # フォーマットを定義
-#formatter_func = "%(asctime)s\t[%(levelname)8s]\t%(message)s from %(func)" # フォーマットを定義
-logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter)
-logger = logging.getLogger(__name__) #ファイルの名前を渡す
-
-
-
-
-def my_makedirs(path):
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
-
 def make_csv_from_html():
-    for year in range(2008, 2020):
+    for year in range(2008, now_datetime.year+1):
         make_csv_from_html_by_year(year)
 
 def make_csv_from_html_by_year(year):
     save_race_csv = CSV_DIR+"/race-"+str(year)+".csv"
     horse_race_csv = CSV_DIR+"/horse-"+str(year)+".csv"
-    if not ((os.path.isfile(save_race_csv)) and (os.path.isfile(horse_race_csv))): # まだcsvがなければ取得
-        race_df = pd.DataFrame( columns=race_data_columns )
-        horse_df = pd.DataFrame( columns=horse_data_columns )
+    if not ((os.path.isfile(save_race_csv)) and (os.path.isfile(horse_race_csv))): # まだcsvがなければ生成
+        race_df = pd.DataFrame(columns=race_data_columns )
+        horse_df = pd.DataFrame(columns=horse_data_columns )
         logger.info("saving csv (" + str(year) +")")
         total = 0;
         for month in range(1, 13):
-            # do, if the race_html/year/month directory exists.
+            # race_html/year/month というディレクトリが存在すればappend, なければ何もしない
             html_dir = RACR_HTML_DIR+"/"+str(year)+"/"+str(month)
             if os.path.isdir(html_dir):
                 file_list = os.listdir(html_dir) # get all file names
