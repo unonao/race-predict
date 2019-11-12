@@ -24,8 +24,8 @@ def my_makedirs(path):
         os.makedirs(path)
 
 def get_race_html():
-    for year in range(2019, 2020):
-        for month in range(1, 2):
+    for year in range(2008, 2020):
+        for month in range(1, 13):
                 get_race_html_by_year_and_mon(year,month)
 
 def get_race_html_by_year_and_mon(year,month):
@@ -39,7 +39,9 @@ def get_race_html_by_year_and_mon(year,month):
             race_id = list[-2]
             save_file_path = save_dir+"/"+race_id+'.html'
             if not os.path.isfile(save_file_path): # まだ取得していなければ取得
-                html = requests.get(url).text
+                response = requests.get(url)
+                response.encoding = response.apparent_encoding # https://qiita.com/nittyan/items/d3f49a7699296a58605b
+                html = response.text
                 time.sleep(1)
                 with open(save_file_path, 'w') as file:
                     file.write(html)
