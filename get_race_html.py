@@ -40,23 +40,32 @@ def get_race_html_by_year_and_mon(year,month):
         save_dir = RACR_HTML_DIR+"/"+str(year)+"/"+str(month)
         my_makedirs(save_dir)
         urls = f.read().splitlines()
-        logger.info("getting htmls ("+str(year) +" "+ str(month) + ")")
-        for url in urls:
-            list = url.split("/")
-            race_id = list[-2]
-            save_file_path = save_dir+"/"+race_id+'.html'
-            if not os.path.isfile(save_file_path): # まだ取得していなければ取得
-                response = requests.get(url)
-                response.encoding = response.apparent_encoding # https://qiita.com/nittyan/items/d3f49a7699296a58605b
-                html = response.text
-                time.sleep(1)
-                with open(save_file_path, 'w') as file:
-                    file.write(html)
-    logging.info("saved " + str(len(urls)) +" htmls ("+str(year) +" "+ str(month) + ")")
+
+        file_list = os.listdir(save_dir) # get all file names
+
+        # 取得すべき数と保持している数が違う場合のみ
+        if len(urls) != len(file_list):
+            logger.info("getting htmls ("+str(year) +" "+ str(month) + ")")
+            for url in urls:
+                list = url.split("/")
+                race_id = list[-2]
+                save_file_path = save_dir+"/"+race_id+'.html'
+                if not os.path.isfile(save_file_path): # まだ取得していなければ取得
+                    response = requests.get(url)
+                    response.encoding = response.apparent_encoding # https://qiita.com/nittyan/items/d3f49a7699296a58605b
+                    html = response.text
+                    time.sleep(1)
+                    with open(save_file_path, 'w') as file:
+                        file.write(html)
+            logging.info("saved " + str(len(urls)) +" htmls ("+str(year) +" "+ str(month) + ")")
+
+        else:
+            logging.info("already have " + str(len(urls)) +" htmls ("+str(year) +" "+ str(month) + ")")
+
 
 if __name__ == '__main__':
     formatter = "%(asctime)s [%(levelname)s]\t%(message)s" # フォーマットを定義
     logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter)
-    
+
     logger.info("start get race html!")
     get_race_html()
