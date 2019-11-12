@@ -18,9 +18,6 @@ RACR_HTML_DIR = "race_html"
 
 
 import logging
-formatter = "%(asctime)s [%(levelname)s]\t%(message)s" # フォーマットを定義
-#formatter_func = "%(asctime)s\t[%(levelname)8s]\t%(message)s from %(func)" # フォーマットを定義
-logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter)
 logger = logging.getLogger(__name__) #ファイルの名前を渡す
 
 
@@ -58,5 +55,8 @@ def get_race_html_by_year_and_mon(year,month):
     logging.info("saved " + str(len(urls)) +" htmls ("+str(year) +" "+ str(month) + ")")
 
 if __name__ == '__main__':
+    formatter = "%(asctime)s [%(levelname)s]\t%(message)s" # フォーマットを定義
+    logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter)
+    
     logger.info("start get race html!")
     get_race_html()
