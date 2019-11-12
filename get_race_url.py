@@ -44,17 +44,17 @@ def get_race_url():
         for month in range(1, 13):
             race_url_file = RACR_URL_DIR + "/" + str(year) + "-" + str(month) + ".txt" #保存先ファイル
             if not os.path.isfile(race_url_file): # まだ取得していなければ取得
-                logger.info("getting data ("+str(year) +" "+ str(month) + ")")
+                logger.info("getting urls ("+str(year) +" "+ str(month) + ")")
                 get_race_url_by_year_and_mon(driver,year,month)
     # 先月までのデータ
     for year in range(now_datetime.year, now_datetime.year+1):
         for month in range(1, now_datetime.month):
             race_url_file = RACR_URL_DIR + "/" + str(year) + "-" + str(month) + ".txt" #保存先ファイル
             if not os.path.isfile(race_url_file): # まだ取得していなければ取得
-                logger.info("getting data ("+str(year) +" "+ str(month) + ")")
+                logger.info("getting urls ("+str(year) +" "+ str(month) + ")")
                 get_race_url_by_year_and_mon(driver,year,month)
     # 今月分は毎回取得
-    logger.info("getting data ("+str(now_datetime.year) +" "+ str(now_datetime.month) + ")")
+    logger.info("getting urls ("+str(now_datetime.year) +" "+ str(now_datetime.month) + ")")
     get_race_url_by_year_and_mon(driver, now_datetime.year, now_datetime.month)
 
     driver.close()
