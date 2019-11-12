@@ -21,7 +21,6 @@ formatter = "%(asctime)s [%(levelname)s]\t%(message)s" # フォーマットを�
 #formatter_func = "%(asctime)s\t[%(levelname)8s]\t%(message)s from %(func)" # フォーマットを定義
 logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter)
 logger = logging.getLogger(__name__) #ファイルの名前を渡す
-logger.info("start script...")
 
 
 
@@ -133,5 +132,5 @@ def get_race_url_by_year_and_mon(driver, year, month):
 
 
 if __name__ == '__main__':
-    print("start get race url!")
+    logger.info("start get race url!")
     get_race_url()
