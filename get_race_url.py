@@ -33,7 +33,7 @@ WAIT_SECOND = 5
 def get_race_url():
     options = Options()
     options.add_argument('--headless')
-    driver = webdriver.Chrome(chrome_options=options) # mac はbrewでインストールしたのでpathはok
+    driver = webdriver.Chrome(options=options) # mac はbrewでインストールしたのでpathはok
     driver.implicitly_wait(10)
     # 去年までのデータ
     for year in range(2008, now_datetime.year):
