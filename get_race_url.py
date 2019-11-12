@@ -4,6 +4,9 @@ https://db.netkeiba.com/?pid=race_search_detail
 検索窓から全レースを一覧表示
 →レースへのリンクを取得
 """
+import datetime
+import pytz
+now_datetime = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
 
 import re
 import time
@@ -14,10 +17,13 @@ OWN_FILE_NAME = path.splitext(path.basename(__file__))[0]
 RACR_URL_DIR = "race_url"
 
 import logging
-logger = logging.getLogger(__name__) # get_race_url.py の名前を渡す
-formatter = '%(levelname)s : %(asctime)s : %(message)s' # フォーマットを定義
+formatter = "%(asctime)s [%(levelname)s]\t%(message)s" # フォーマットを定義
+#formatter_func = "%(asctime)s\t[%(levelname)8s]\t%(message)s from %(func)" # フォーマットを定義
 logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter)
-logging.info("start script...")
+logger = logging.getLogger(__name__) #ファイルの名前を渡す
+logger.info("start script...")
+
+
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select,WebDriverWait
@@ -33,10 +39,24 @@ def get_race_url():
     options.add_argument('--headless')
     driver = webdriver.Chrome(chrome_options=options) # mac はbrewでインストールしたのでpathはok
     driver.implicitly_wait(10)
-    for year in range(2018, 2020):
+    # 去年までのデータ
+    for year in range(2008, now_datetime.year):
         for month in range(1, 13):
-                print("getting",year,month,"data")
+            race_url_file = RACR_URL_DIR + "/" + str(year) + "-" + str(month) + ".txt" #保存先ファイル
+            if not os.path.isfile(race_url_file): # まだ取得していなければ取得
+                logger.info("getting data ("+str(year) +" "+ str(month) + ")")
                 get_race_url_by_year_and_mon(driver,year,month)
+    # 先月までのデータ
+    for year in range(now_datetime.year, now_datetime.year+1):
+        for month in range(1, now_datetime.month):
+            race_url_file = RACR_URL_DIR + "/" + str(year) + "-" + str(month) + ".txt" #保存先ファイル
+            if not os.path.isfile(race_url_file): # まだ取得していなければ取得
+                logger.info("getting data ("+str(year) +" "+ str(month) + ")")
+                get_race_url_by_year_and_mon(driver,year,month)
+    # 今月分は毎回取得
+    logger.info("getting data ("+str(now_datetime.year) +" "+ str(now_datetime.month) + ")")
+    get_race_url_by_year_and_mon(driver, now_datetime.year, now_datetime.month)
+
     driver.close()
     driver.quit()
 
@@ -107,9 +127,9 @@ def get_race_url_by_year_and_mon(driver, year, month):
                     driver.execute_script("arguments[0].click();", target) #javascriptでクリック処理
                 except IndexError:
                     break
-        logging.info(str(year)+"/"+str(month) +" data " + str(total_num) +"件中"+ str(total) + "件更新")
+        logging.info("got "+ str(total) +" urls of " + str(total_num) +" ("+str(year) +" "+ str(month) + ")")
     else:
-        logging.info("already have " +str(year)+"/"+str(month) +" data " + str(pre_url_num) +"件")
+        logging.info("already have " + str(pre_url_num) +" urls ("+str(year) +" "+ str(month) + ")")
 
 
 if __name__ == '__main__':
