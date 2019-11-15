@@ -40,9 +40,15 @@ race_data_columns=[
     'frame_number_third',
     'horse_number_third',
     'tansyo',
-    'hukuren_first',
-    'hukuren_second',
-    'hukuren_third',
+    'hukusyo_first',
+    'hukusyo_second',
+    'hukusyo_third',
+    'wakuren',
+    'umaren',
+    'wide_1_2',
+    'wide_1_3',
+    'wide_2_3',
+    'umatan',
     'renhuku3',
     'rentan3'
     ]
@@ -140,7 +146,7 @@ def get_rade_and_horse_data_by_html(race_id, html):
     pay_back_tables = soup.findAll("table", class_="pay_table_01")
 
     pay_back1 = pay_back_tables[0].findAll('tr') # 払い戻し1(単勝・複勝)
-    race_list.append(pay_back1[1].find("td", class_="txt_r").get_text()) #tansyo
+    race_list.append(pay_back1[0].find("td", class_="txt_r").get_text()) #tansyo
     hukuren = pay_back1[1].find("td", class_="txt_r")
     tmp = []
     for string in hukuren.strings:
@@ -151,7 +157,33 @@ def get_rade_and_horse_data_by_html(race_id, html):
         except IndexError:
             race_list.append("0")
 
+    # 枠連
+    race_list.append(pay_back1[2].find("td", class_="txt_r").get_text())
+
+    # 馬連
+    try:
+        race_list.append(pay_back1[3].find("td", class_="txt_r").get_text())
+    except IndexError:
+        race_list.append("0")
+
+
+
     pay_back2 = pay_back_tables[1].findAll('tr') # 払い戻し2(三連複・3連単)
+
+    # wide 1&2
+    wide = pay_back2[0].find("td", class_="txt_r")
+    tmp = []
+    for string in wide.strings:
+        tmp.append(string)
+    for i in range(3):
+        try:
+            race_list.append(tmp[i]) # hukuren_first or second or third
+        except IndexError:
+            race_list.append("0")
+
+    # umatan
+    race_list.append(pay_back2[1].find("td", class_="txt_r").get_text()) #renhuku3
+
     race_list.append(pay_back2[2].find("td", class_="txt_r").get_text()) #renhuku3
     try:
         race_list.append(pay_back2[3].find("td", class_="txt_r").get_text()) #rentan3
@@ -213,6 +245,14 @@ if __name__ == '__main__':
     formatter = "%(asctime)s [%(levelname)s]\t%(message)s" # フォーマットを定義
     #formatter_func = "%(asctime)s\t[%(levelname)8s]\t%(message)s from %(func)" # フォーマットを定義
     logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter)
-    
+
     logger.info("start making csv!")
-    make_csv_from_html()
+    #make_csv_from_html()
+
+    # テスト
+    make_csv_from_html_by_year(2008)
+    """
+    with open("race_html/2008/1/200810010312.html", "r") as f:
+        html = f.read()
+        get_rade_and_horse_data_by_html(200810010312,html)
+"""
