@@ -158,7 +158,10 @@ def get_rade_and_horse_data_by_html(race_id, html):
             race_list.append("0")
 
     # 枠連
-    race_list.append(pay_back1[2].find("td", class_="txt_r").get_text())
+    try:
+        race_list.append(pay_back1[2].find("td", class_="txt_r").get_text())
+    except IndexError:
+        race_list.append("0")
 
     # 馬連
     try:
