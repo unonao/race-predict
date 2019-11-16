@@ -102,7 +102,7 @@ def create_model(X_train, Y_train, X_test, Y_test):
         callbacks=callbacks)
 
     val_loss, val_acc = model.evaluate(X_test, Y_test, verbose=0)
-    return {'loss': -val_loss, 'status': STATUS_OK, 'model': model}
+    return {'loss': val_loss, 'status': STATUS_OK, 'model': model}
 
 def prepare_data_is_tansyo():
     target_name='is_tansyo'
@@ -162,14 +162,14 @@ def hyperas_learn(target_name):
         best_run, best_model = optim.minimize(model=create_model,
                                               data=prepare_data_is_tansyo,
                                               algo=tpe.suggest,
-                                              max_evals=1,
+                                              max_evals=15,
                                               trials=Trials())
         _, _, X_test, Y_test = prepare_data_is_tansyo()
     elif target_name=='is_hukusyo':
         best_run, best_model = optim.minimize(model=create_model,
                                               data=prepare_data_is_hukusyo,
                                               algo=tpe.suggest,
-                                              max_evals=1,
+                                              max_evals=15,
                                               trials=Trials())
         _, _, X_test, Y_test = prepare_data_is_hukusyo()
 
