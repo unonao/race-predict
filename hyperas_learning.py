@@ -102,6 +102,7 @@ def create_model(X_train, Y_train, X_test, Y_test):
         callbacks=callbacks)
 
     val_loss, val_acc = model.evaluate(X_test, Y_test, verbose=0)
+    print('Best validation loss of epoch:', val_loss)
     return {'loss': val_loss, 'status': STATUS_OK, 'model': model}
 
 def prepare_data_is_tansyo():
