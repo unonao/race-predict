@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 import sys
 import requests
@@ -14,8 +15,13 @@ logger = logging.getLogger(__name__) #ファイルの名前を渡す
 my_token = os.environ['LINE_TOKEN']
 
 from sklearn.model_selection import TimeSeriesSplit
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import log_loss
+from sklearn.metrics import confusion_matrix
 
 import tensorflow as tf
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import CSVLogger
 
 def send_line_notification(message):
     line_token = my_token
@@ -27,26 +33,34 @@ def send_line_notification(message):
 
 
 def train_test_time_split(dataflame, train_ratio=0.8):
+    """
+    時系列を加味してデータをsplit
+    """
     X =dataflame.sort_values("date")
     train_size = int(len(X) * train_ratio)
 
     logger.info("split trian and test :{} (train_ratio:{})".format(X["date"][train_size] , train_ratio))
 
-    return X[0:train_size], X[train_size:len(X)]
+    return X[0:train_size].copy().reset_index(drop=True), X[train_size:len(X)].copy().reset_index(drop=True)
 
-def label_split_and_drop(X_df, target):
-    # targetをYに分割して、Xから余分なカラムを削除し、numpyの形式にする
-    Y = X_df[target].values
-    X = X_df.drop([target], axis=1).drop(['date'], axis=1).drop(['race_id'], axis=1).values
+def label_split_and_drop(X_df, target_name):
+    """
+    target_nameをYに分割して、Xから余分なカラムを削除し、numpyの形式にする
+    """
+    Y = X_df[target_name].values
+    X = X_df.drop(['is_tansyo','is_hukusyo','date','race_id' ], axis=1).values
+    sc = StandardScaler()
+    X = sc.fit_transform(X)
     return X, Y
+
 
 def build_model(df_columns_len):
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(300, kernel_regularizer=tf.keras.regularizers.l2(0.001), activation=tf.nn.relu, input_dim=df_columns_len),
+        tf.keras.layers.Dense(100, kernel_regularizer=tf.keras.regularizers.l2(0.001), activation=tf.nn.relu, input_dim=df_columns_len),
         tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(300, kernel_regularizer=tf.keras.regularizers.l2(0.001), activation=tf.nn.relu),
+        tf.keras.layers.Dense(100, kernel_regularizer=tf.keras.regularizers.l2(0.001), activation=tf.nn.relu),
         tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(1, activation=tf.nn.sigmoid) # 出力は一つ。シグモイド関数。ソフトマックスで確率を出すのは...？
+        tf.keras.layers.Dense(1, activation=tf.nn.sigmoid) # 出力は一つ。シグモイド関数
     ])
 
     model.compile(
@@ -56,96 +70,100 @@ def build_model(df_columns_len):
 
     return model
 
-def compare_TV(history,number):
-    import matplotlib.pyplot as plt
-    # Setting Parameters
-    acc = history.history['acc']
-    val_acc = history.history['val_acc']
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
+def plot_history(history,number,name):
 
-    epochs = range(len(acc))
+    fig, (axL, axR) = plt.subplots(ncols=2, figsize=(10,4))
 
-    # 1) Accracy Plt
-    plt.plot(epochs, acc, 'bo' ,label = 'training acc')
-    plt.plot(epochs, val_acc, 'b' , label= 'validation acc')
-    plt.title('Training and Validation acc')
-    plt.legend()
-    plt.figure()
-    # 2) Loss Plt
-    plt.plot(epochs, loss, 'bo' ,label = 'training loss')
-    plt.plot(epochs, val_loss, 'b' , label= 'validation loss')
-    plt.title('Training and Validation loss')
-    plt.legend()
+    # for loss
+    axL.plot(history.history['loss'],label="loss for training")
+    axL.plot(history.history['val_loss'],label="loss for validation")
+    axL.set_title('model loss No.{}'.format(number))
+    axL.set_xlabel('epoch')
+    axL.set_ylabel('loss')
+    axL.legend(loc='upper right')
 
-    plt.show()
+    axR.plot(history.history['accuracy'],label="acc for training")
+    axR.plot(history.history['val_accuracy'],label="acc for validation")
+    axR.set_title('model accuracy')
+    axR.set_xlabel('epoch')
+    axR.set_ylabel('accuracy')
+    axR.legend(loc='upper right')
+
     # figureの保存
-    plt.savefig("png/plot{}.png".format(number))
+    plt.savefig("model/{}_model{}_plot_history.png".format(name,number))
 
 
-def keras_train():
+def keras_train(target_name='is_tansyo'):
     final_df = pd.read_csv("csv/final_data.csv", sep=",")
-    train, test = train_test_time_split(final_df)
-    X_train, Y_train = label_split_and_drop(train, 'is_tansyo')
-    X_test, Y_test = label_split_and_drop(test, 'is_tansyo')
+    train_df, test_df = train_test_time_split(final_df)
+    X_train, Y_train = label_split_and_drop(train_df, target_name)
+    X_test, Y_test = label_split_and_drop(test_df, target_name)
+
+    predict_proba_results = np.zeros(len(Y_test))
+    predict_proba_results = predict_proba_results.reshape(len(Y_test),1)
+
 
     # 時系列データで有ることを考慮してCVを切る
-    tscv = TimeSeriesSplit(n_splits=5)
+    n_splits = 2
+    tscv = TimeSeriesSplit(n_splits=n_splits)
     number = 0
-    all_loss=[]
-    all_val_loss=[]
-    all_acc=[]
-    all_val_acc=[]
+
     for train_index, val_index in tscv.split(X_train,Y_train):
-        logger.info("start !")
+        logger.info("start {}!".format(number))
+
+        callbacks = []
+        callbacks.append(EarlyStopping(monitor='val_loss', patience=1))
+        callbacks.append(CSVLogger("model/{}_history{}.csv".format(target_name, number)))
+
         train_data=X_train[train_index]
         train_label=Y_train[train_index]
         val_data=X_train[val_index]
         val_label=Y_train[val_index]
 
-        model=build_model()
+        model=build_model(train_data.shape[1])
 
         history = model.fit(train_data,
             train_label,
             validation_data=(val_data, val_label),
-            epochs=30,
-            batch_size=32)
+            epochs=2,
+            batch_size=128,
+            callbacks=callbacks)
 
-        all_loss.append(history.history['loss'])
-        all_val_loss.append(history.history['val_loss'])
-        all_acc.append(history.history['acc'])
-        all_val_acc.append(history.history['val_acc'])
+        # モデルの保存
+        model.save("model/{}_model{}.h5".format(target_name,number))
+
+        # 途中結果
+        logger.info("{} history: {}".format(target_name, history.history))
+
+        # 予測の保存
+        predict_proba_results += model.predict_proba(X_test) /n_splits
 
         # 可視化
-        compare_TV(history, number)
+        plot_history(history, number, target_name)
         number += 1
 
+    # 結果の保存
+    predict_proba_results = predict_proba_results.flatten()
+    print(predict_proba_results)
+    se = pd.Series(data=predict_proba_results, name="predict_{}".format(target_name), dtype='float')
+    predicted_test_df = pd.concat([test_df, se], axis=1)
+    predicted_test_df.to_csv("predict/{}_predicted_test.csv".format(target_name), index=False)
 
-    ave_all_loss=[
-        np.mean([x[i] for x in all_loss]) for i in range(ep)]
-    ave_all_val_loss=[
-        np.mean([x[i] for x in all_val_loss]) for i in range(ep)]
-    ave_all_acc=[
-        np.mean([x[i] for x in all_acc]) for i in range(ep)]
-    ave_all_val_acc=[
-        np.mean([x[i] for x in all_val_acc]) for i in range(ep)]
+    # test データでのloglossを確認
+    predict_results = np.where(predict_proba_results > 0.5, 1, 0) # 確率に応じて0,1に変換
+    logger.info("{} test_log_loss:{}".format(target_name, log_loss(Y_test,  predict_results)))
 
-    logger.info("\n    ave_all_loss:{}".format(ave_all_loss))
-    logger.info("\n    ave_all_val_loss:{}".format(ave_all_val_loss))
-    logger.info("\n    ave_all_acc:{}".format(ave_all_acc))
-    logger.info("\n    ave_all_val_acc:{}".format(ave_all_val_acc))
+    # 混同行列
+    logger.info("{} confusion_matrix:{}".format(target_name, confusion_matrix(Y_test, predict_results)))
 
-    logger.info("\n    all_loss:{}".format(all_loss))
-    logger.info("\n    all_val_loss:{}".format(all_val_loss))
-    logger.info("\n    all_acc:{}".format(all_acc))
-    logger.info("\n    all_val_acc:{}".format(all_val_acc))
 
 if __name__ == '__main__':
     try:
         formatter_func = "%(asctime)s - %(module)s.%(funcName)s [%(levelname)s]\t%(message)s" # フォーマットを定義
         logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter_func)
         logger.info("start train!")
-        keras_train()
+        keras_train('is_tansyo')
+        keras_train('is_hukusyo')
         send_line_notification(OWN_FILE_NAME+" end!")
     except Exception as e:
         t, v, tb = sys.exc_info()

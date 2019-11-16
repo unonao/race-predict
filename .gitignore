@@ -1,3 +1,4 @@
 *.html
-*.csv
+/csv/
+/model/*predicted*.csv
 *.log
