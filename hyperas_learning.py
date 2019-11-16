@@ -64,8 +64,7 @@ def label_split_and_drop(X_df, target_name):
     X = sc.fit_transform(X)
     return X, Y
 
-
-def create_model(X_train, Y_train, X_test, Y_test):
+def create_model_is_hukusyo(X_train, Y_train, X_test, Y_test):
     train_size = int(len(Y_train) * 0.8)
     train_data = X_train[0:train_size]
     train_label = Y_train[0:train_size]
@@ -77,6 +76,47 @@ def create_model(X_train, Y_train, X_test, Y_test):
 
     model = Sequential()
     model.add(Dense({{choice([256, 512,1024])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu", input_dim=train_data.shape[1]))
+    model.add(Dropout({{uniform(0, 0.5)}}))
+    model.add(Dense({{choice([64, 128, 256])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
+    model.add(Dropout({{uniform(0, 0.5)}}))
+
+    if {{choice(['three', 'four'])}} == 'three':
+        pass
+    elif {{choice(['three', 'four'])}} == 'four':
+        model.add(Dense(16, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
+        model.add(Dropout({{uniform(0, 0.5)}}))
+
+    model.add(Dense(1, activation="sigmoid"))
+
+    model.compile(
+        loss='binary_crossentropy',
+        optimizer=keras.optimizers.Adam(),
+        metrics=['accuracy'])
+
+    history = model.fit(train_data,
+        train_label,
+        validation_data=(val_data, val_label),
+        epochs=30,
+        batch_size=64,
+        callbacks=callbacks)
+
+    val_loss, val_acc = model.evaluate(X_test, Y_test, verbose=0)
+    print('Best validation loss of epoch:', val_loss)
+    return {'loss': val_loss, 'status': STATUS_OK, 'model': model}
+
+
+def create_model_is_hukusyo(X_train, Y_train, X_test, Y_test):
+    train_size = int(len(Y_train) * 0.8)
+    train_data = X_train[0:train_size]
+    train_label = Y_train[0:train_size]
+    val_data = X_train[train_size:len(Y_train)]
+    val_label = Y_train[train_size:len(Y_train)]
+
+    callbacks = []
+    callbacks.append(EarlyStopping(monitor='val_loss', patience=3))
+
+    model = Sequential()
+    model.add(Dense({{choice([256,512,1024])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu", input_dim=train_data.shape[1]))
     model.add(Dropout({{uniform(0, 0.5)}}))
     model.add(Dense({{choice([64, 128, 256])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
     model.add(Dropout({{uniform(0, 0.5)}}))
@@ -133,7 +173,7 @@ def prepare_data_is_tansyo():
 """
 
 def prepare_data_is_hukusyo():
-    target_name='is_tansyo'
+    target_name='is_hukusyo'
     final_df = pd.read_csv("csv/final_data.csv", sep=",")
 
     train_ratio = 0.8
@@ -160,14 +200,14 @@ def hyperas_learn(target_name):
     """
     logger.info("start train for {}".format(target_name))
     if target_name=='is_tansyo':
-        best_run, best_model = optim.minimize(model=create_model,
+        best_run, best_model = optim.minimize(model=create_model_is_tansyo,,
                                               data=prepare_data_is_tansyo,
                                               algo=tpe.suggest,
                                               max_evals=15,
                                               trials=Trials())
         _, _, X_test, Y_test = prepare_data_is_tansyo()
     elif target_name=='is_hukusyo':
-        best_run, best_model = optim.minimize(model=create_model,
+        best_run, best_model = optim.minimize(model=create_model_is_hukusyo,
                                               data=prepare_data_is_hukusyo,
                                               algo=tpe.suggest,
                                               max_evals=15,
