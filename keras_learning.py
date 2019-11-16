@@ -56,9 +56,9 @@ def label_split_and_drop(X_df, target_name):
 
 def build_model(df_columns_len):
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(100, kernel_regularizer=tf.keras.regularizers.l2(0.001), activation=tf.nn.relu, input_dim=df_columns_len),
+        tf.keras.layers.Dense(300, kernel_regularizer=tf.keras.regularizers.l2(0.001), activation=tf.nn.relu, input_dim=df_columns_len),
         tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(100, kernel_regularizer=tf.keras.regularizers.l2(0.001), activation=tf.nn.relu),
+        tf.keras.layers.Dense(300, kernel_regularizer=tf.keras.regularizers.l2(0.001), activation=tf.nn.relu),
         tf.keras.layers.Dropout(0.2),
         tf.keras.layers.Dense(1, activation=tf.nn.sigmoid) # 出力は一つ。シグモイド関数
     ])
@@ -125,8 +125,8 @@ def keras_train(target_name='is_tansyo'):
         history = model.fit(train_data,
             train_label,
             validation_data=(val_data, val_label),
-            epochs=2,
-            batch_size=128,
+            epochs=30,
+            batch_size=32,
             callbacks=callbacks)
 
         # モデルの保存
