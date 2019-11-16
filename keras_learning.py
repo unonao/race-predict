@@ -94,6 +94,33 @@ def plot_history(history,number,name):
     # figureの保存
     plt.savefig("model/{}_model{}_plot_history.png".format(name,number))
 
+def train_model(train_data,train_label,val_data,val_label,target_name, number=0):
+    logger.info("start train{}!".format(number))
+    callbacks = []
+    callbacks.append(EarlyStopping(monitor='val_loss', patience=3))
+    callbacks.append(CSVLogger("model/{}_history{}.csv".format(target_name, number)))
+    model=build_model(train_data.shape[1])
+    history = model.fit(train_data,
+        train_label,
+        validation_data=(val_data, val_label),
+        epochs=30,
+        batch_size=64,
+        callbacks=callbacks)
+    # モデルの保存
+    model.save("model/{}_model{}.h5".format(target_name,number))
+    # 途中結果
+    #logger.info("{} loss:\n\t\t{}".format(target_name, history.history["loss"]))
+    #logger.info("{} accuracy:\n\t\t{}".format(target_name, history.history["accuracy"]))
+    logger.info("{} val_loss:\n\t\t{}".format(target_name, history.history["val_loss"]))
+    #logger.info("{} val_accuracy:\n\t\t{}".format(target_name, history.history["val_accuracy"]))
+    # 予測値
+    predict_proba_results = model.predict_proba(X_test) /n_splits
+    # 可視化
+    #plot_history(history, number, target_name)
+    return predict_proba_results, model
+
+
+
 
 def keras_train(target_name='is_tansyo'):
     final_df = pd.read_csv("csv/final_data.csv", sep=",")
@@ -104,48 +131,26 @@ def keras_train(target_name='is_tansyo'):
     predict_proba_results = np.zeros(len(Y_test))
     predict_proba_results = predict_proba_results.reshape(len(Y_test),1)
 
-
     # 時系列データで有ることを考慮してCVを切る
-    n_splits = 2
-    tscv = TimeSeriesSplit(n_splits=n_splits)
-    number = 0
-
-    for train_index, val_index in tscv.split(X_train,Y_train):
-        logger.info("start {}!".format(number))
-
-        callbacks = []
-        callbacks.append(EarlyStopping(monitor='val_loss', patience=3))
-        callbacks.append(CSVLogger("model/{}_history{}.csv".format(target_name, number)))
-
-        train_data=X_train[train_index]
-        train_label=Y_train[train_index]
-        val_data=X_train[val_index]
-        val_label=Y_train[val_index]
-
-        model=build_model(train_data.shape[1])
-
-        history = model.fit(train_data,
-            train_label,
-            validation_data=(val_data, val_label),
-            epochs=30,
-            batch_size=64,
-            callbacks=callbacks)
-
-        # モデルの保存
-        model.save("model/{}_model{}.h5".format(target_name,number))
-
-        # 途中結果
-        #logger.info("{} loss:\n\t\t{}".format(target_name, history.history["loss"]))
-        #logger.info("{} accuracy:\n\t\t{}".format(target_name, history.history["accuracy"]))
-        logger.info("{} val_loss:\n\t\t{}".format(target_name, history.history["val_loss"]))
-        #logger.info("{} val_accuracy:\n\t\t{}".format(target_name, history.history["val_accuracy"]))
-
-        # 予測の保存
-        predict_proba_results += model.predict_proba(X_test) /n_splits
-
-        # 可視化
-        plot_history(history, number, target_name)
-        number += 1
+    n_splits = 1
+    if n_splits >= 2:
+        tscv = TimeSeriesSplit(n_splits=n_splits)
+        number = 0
+        for train_index, val_index in tscv.split(X_train,Y_train):
+            train_data=X_train[train_index]
+            train_label=Y_train[train_index]
+            val_data=X_train[val_index]
+            val_label=Y_train[val_index]
+            one_predict_proba_results, model = train_model(train_data,train_label,val_data,val_label,target_name, number=number)
+            predict_proba_results += one_predict_proba_results/n_splits
+            number += 1
+    elif n_splits == 1 :
+        train_size = int(len(Y_train) * 0.8)
+        train_data = X_train[0:train_size]
+        train_label = Y_train[0:train_size]
+        val_data = X_train[train_size:len(Y_train)]
+        val_label = Y_train[train_size:len(Y_train)]
+        predict_proba_results, model = train_model(train_data,train_label,val_data,val_label,target_name)
 
     with StringIO() as buf:
             # StringIOに書き込む
