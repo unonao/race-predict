@@ -64,7 +64,7 @@ def label_split_and_drop(X_df, target_name):
     X = sc.fit_transform(X)
     return X, Y
 
-def create_model_is_hukusyo(X_train, Y_train, X_test, Y_test):
+def create_model_is_tansyo(X_train, Y_train, X_test, Y_test):
     train_size = int(len(Y_train) * 0.8)
     train_data = X_train[0:train_size]
     train_label = Y_train[0:train_size]
@@ -75,7 +75,7 @@ def create_model_is_hukusyo(X_train, Y_train, X_test, Y_test):
     callbacks.append(EarlyStopping(monitor='val_loss', patience=3))
 
     model = Sequential()
-    model.add(Dense({{choice([256, 512,1024])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu", input_dim=train_data.shape[1]))
+    model.add(Dense({{choice([256, 512])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu", input_dim=train_data.shape[1]))
     model.add(Dropout({{uniform(0, 0.5)}}))
     model.add(Dense({{choice([64, 128, 256])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
     model.add(Dropout({{uniform(0, 0.5)}}))
@@ -83,7 +83,7 @@ def create_model_is_hukusyo(X_train, Y_train, X_test, Y_test):
     if {{choice(['three', 'four'])}} == 'three':
         pass
     elif {{choice(['three', 'four'])}} == 'four':
-        model.add(Dense(16, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
+        model.add(Dense({{choice([8, 16, 32])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
         model.add(Dropout({{uniform(0, 0.5)}}))
 
     model.add(Dense(1, activation="sigmoid"))
@@ -200,7 +200,7 @@ def hyperas_learn(target_name):
     """
     logger.info("start train for {}".format(target_name))
     if target_name=='is_tansyo':
-        best_run, best_model = optim.minimize(model=create_model_is_tansyo,,
+        best_run, best_model = optim.minimize(model=create_model_is_tansyo,
                                               data=prepare_data_is_tansyo,
                                               algo=tpe.suggest,
                                               max_evals=15,
