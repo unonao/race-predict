@@ -112,7 +112,7 @@ def keras_train(target_name='is_tansyo'):
         logger.info("start {}!".format(number))
 
         callbacks = []
-        callbacks.append(EarlyStopping(monitor='val_loss', patience=1))
+        callbacks.append(EarlyStopping(monitor='val_loss', patience=3))
         callbacks.append(CSVLogger("model/{}_history{}.csv".format(target_name, number)))
 
         train_data=X_train[train_index]
