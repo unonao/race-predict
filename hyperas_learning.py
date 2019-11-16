@@ -162,14 +162,14 @@ def hyperas_learn(target_name):
         best_run, best_model = optim.minimize(model=create_model,
                                               data=prepare_data_is_tansyo,
                                               algo=tpe.suggest,
-                                              max_evals=3,
+                                              max_evals=1,
                                               trials=Trials())
         _, _, X_test, Y_test = prepare_data_is_tansyo()
     elif target_name=='is_hukusyo':
         best_run, best_model = optim.minimize(model=create_model,
                                               data=prepare_data_is_hukusyo,
                                               algo=tpe.suggest,
-                                              max_evals=3,
+                                              max_evals=1,
                                               trials=Trials())
         _, _, X_test, Y_test = prepare_data_is_hukusyo()
 
@@ -188,12 +188,13 @@ def hyperas_learn(target_name):
     logger.info("test loss:\t{}".format(val_loss))
     logger.info("test acc:\t{}".format(val_acc))
 
+    predict_proba_results = best_model.predict_proba(X_test)
+
     # 混同行列
     predict_results = np.where(predict_proba_results > 0.5, 1, 0) # 確率に応じて0,1に変換
     logger.info("{} confusion_matrix:\n{}\n".format(target_name, confusion_matrix(Y_test, predict_results)))
 
     # 結果の保存のためにシリーズにする
-    predict_proba_results = best_model.predict_proba(X_test) /n_splits
     predict_proba_results = predict_proba_results.flatten()
     return pd.Series(data=predict_proba_results, name="predict_{}".format(target_name), dtype='float')
 
@@ -205,9 +206,11 @@ if __name__ == '__main__':
         logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter_func)
 
         is_tansyo_se = hyperas_learn('is_tansyo')
-        #is_hukusyo_se = hyperas_learn('is_hukusyo')
+        is_hukusyo_se = hyperas_learn('is_hukusyo')
 
         # 結果の保存
+        final_df = pd.read_csv("csv/final_data.csv", sep=",")
+        _, test_df = train_test_time_split(final_df)
         predicted_test_df = pd.concat([test_df, is_tansyo_se,is_hukusyo_se], axis=1)
         predicted_test_df.to_csv("predict/best_predicted_test.csv", index=False)
 
