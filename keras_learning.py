@@ -113,11 +113,9 @@ def train_model(train_data,train_label,val_data,val_label,target_name, number=0)
     #logger.info("{} accuracy:\n\t\t{}".format(target_name, history.history["accuracy"]))
     logger.info("{} val_loss:\n\t\t{}".format(target_name, history.history["val_loss"]))
     #logger.info("{} val_accuracy:\n\t\t{}".format(target_name, history.history["val_accuracy"]))
-    # 予測値
-    predict_proba_results = model.predict_proba(X_test) /n_splits
     # 可視化
     #plot_history(history, number, target_name)
-    return predict_proba_results, model
+    return model
 
 
 
@@ -132,7 +130,7 @@ def keras_train(target_name='is_tansyo'):
     predict_proba_results = predict_proba_results.reshape(len(Y_test),1)
 
     # 時系列データで有ることを考慮してCVを切る
-    n_splits = 1
+    n_splits = 3
     if n_splits >= 2:
         tscv = TimeSeriesSplit(n_splits=n_splits)
         number = 0
@@ -141,8 +139,9 @@ def keras_train(target_name='is_tansyo'):
             train_label=Y_train[train_index]
             val_data=X_train[val_index]
             val_label=Y_train[val_index]
-            one_predict_proba_results, model = train_model(train_data,train_label,val_data,val_label,target_name, number=number)
-            predict_proba_results += one_predict_proba_results/n_splits
+            model = train_model(train_data,train_label,val_data,val_label,target_name, number=number)
+            # 予測値
+            predict_proba_results = model.predict_proba(X_test) /n_splits
             number += 1
     elif n_splits == 1 :
         train_size = int(len(Y_train) * 0.8)
@@ -150,7 +149,8 @@ def keras_train(target_name='is_tansyo'):
         train_label = Y_train[0:train_size]
         val_data = X_train[train_size:len(Y_train)]
         val_label = Y_train[train_size:len(Y_train)]
-        predict_proba_results, model = train_model(train_data,train_label,val_data,val_label,target_name)
+        model = train_model(train_data,train_label,val_data,val_label,target_name)
+        predict_proba_results = model.predict_proba(X_test) /n_splits
 
     with StringIO() as buf:
             # StringIOに書き込む
