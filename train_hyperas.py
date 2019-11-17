@@ -209,7 +209,7 @@ def hyperas_learn(target_name):
                                               trials=Trials())
         _, _, X_test, Y_test = prepare_data_is_hukusyo()
 
-    best_model.save("model/{}_best_{}_model.h5".format(OWN_FILE_NAME, target_name))
+    best_model.save("model/{}_{}_model.h5".format(OWN_FILE_NAME, target_name))
 
     with StringIO() as buf:
             # StringIOに書き込む
