@@ -164,7 +164,7 @@ if __name__ == '__main__':
         final_df = pd.read_csv("csv/final_data.csv", sep=",")
         _, test_df = train_test_time_split(final_df)
         predicted_test_df = pd.concat([test_df, is_tansyo_se,is_hukusyo_se], axis=1)
-        predicted_test_df.to_csv("predict/{}_best_predicted_test.csv".format(OWN_FILE_NAME), index=False)
+        predicted_test_df.to_csv("predict/{}_predicted_test.csv".format(OWN_FILE_NAME), index=False)
 
         send_line_notification(OWN_FILE_NAME+" end!")
     except Exception as e:
