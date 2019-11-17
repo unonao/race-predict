@@ -1,4 +1,6 @@
 *.html
 /csv/
 /model/*predicted*.csv
+/predict/*predicted*.csv
 *.log
+*.gz
