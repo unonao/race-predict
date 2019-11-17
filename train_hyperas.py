@@ -167,11 +167,6 @@ def prepare_data_is_tansyo():
 
     return X_train, Y_train, X_test, Y_test
 
-"""
-
-
-"""
-
 def prepare_data_is_hukusyo():
     target_name='is_hukusyo'
     final_df = pd.read_csv("csv/final_data.csv", sep=",")
@@ -214,7 +209,7 @@ def hyperas_learn(target_name):
                                               trials=Trials())
         _, _, X_test, Y_test = prepare_data_is_hukusyo()
 
-    best_model.save("model/best_{}_model.h5".format(target_name))
+    best_model.save("model/{}_{}_model.h5".format(OWN_FILE_NAME, target_name))
 
     with StringIO() as buf:
             # StringIOに書き込む
@@ -253,7 +248,7 @@ if __name__ == '__main__':
         final_df = pd.read_csv("csv/final_data.csv", sep=",")
         _, test_df = train_test_time_split(final_df)
         predicted_test_df = pd.concat([test_df, is_tansyo_se,is_hukusyo_se], axis=1)
-        predicted_test_df.to_csv("predict/best_predicted_test.csv", index=False)
+        predicted_test_df.to_csv("predict/{}_best_predicted_test.csv".format(OWN_FILE_NAME), index=False)
 
         send_line_notification(OWN_FILE_NAME+" end!")
     except Exception as e:

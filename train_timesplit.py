@@ -49,7 +49,7 @@ def label_split_and_drop(X_df, target_name):
     target_nameをYに分割して、Xから余分なカラムを削除し、numpyの形式にする
     """
     Y = X_df[target_name].values
-    X = X_df.drop(['is_tansyo','is_hukusyo','date','race_id' ], axis=1).values
+    X = X_df.drop(['is_tansyo','is_hukusyo','date','race_id'], axis=1).values
     #logger.info("train columns: {}".format(X_df.drop(['is_tansyo','is_hukusyo','date','race_id' ], axis=1).columns))
     sc = StandardScaler()
     X = sc.fit_transform(X)
@@ -73,9 +73,7 @@ def build_model(df_columns_len):
     return model
 
 def plot_history(history,number,name):
-
     fig, (axL, axR) = plt.subplots(ncols=2, figsize=(10,4))
-
     # for loss
     axL.plot(history.history['loss'],label="loss for training")
     axL.plot(history.history['val_loss'],label="loss for validation")
@@ -83,44 +81,40 @@ def plot_history(history,number,name):
     axL.set_xlabel('epoch')
     axL.set_ylabel('loss')
     axL.legend(loc='upper right')
-
     axR.plot(history.history['accuracy'],label="acc for training")
     axR.plot(history.history['val_accuracy'],label="acc for validation")
     axR.set_title('model accuracy')
     axR.set_xlabel('epoch')
     axR.set_ylabel('accuracy')
     axR.legend(loc='upper right')
-
     # figureの保存
-    plt.savefig("model/{}_model{}_plot_history.png".format(name,number))
+    plt.savefig("model/{}_{}_model{}_plot_history.png".format(OWN_FILE_NAME,name,number))
+
 
 def train_model(train_data,train_label,val_data,val_label,target_name, number=0):
     logger.info("start train{}!".format(number))
     callbacks = []
     callbacks.append(EarlyStopping(monitor='val_loss', patience=3))
-    callbacks.append(CSVLogger("model/{}_history{}.csv".format(target_name, number)))
+    callbacks.append(CSVLogger("model/{}_{}_history{}.csv".format(OWN_FILE_NAME,target_name, number)))
     model=build_model(train_data.shape[1])
     history = model.fit(train_data,
         train_label,
         validation_data=(val_data, val_label),
         epochs=30,
-        batch_size=64,
+        batch_size=256,
         callbacks=callbacks)
     # モデルの保存
-    model.save("model/{}_model{}.h5".format(target_name,number))
-    # 途中結果
-    #logger.info("{} loss:\n\t\t{}".format(target_name, history.history["loss"]))
-    #logger.info("{} accuracy:\n\t\t{}".format(target_name, history.history["accuracy"]))
-    logger.info("{} val_loss:\n\t\t{}".format(target_name, history.history["val_loss"]))
-    #logger.info("{} val_accuracy:\n\t\t{}".format(target_name, history.history["val_accuracy"]))
+    model.save("model/{}_{}_model{}.h5".format(OWN_FILE_NAME,target_name,number))
+
+    logger.info("{} loss:\t{}".format(target_name, history.history["loss"]))
+    logger.info("{} val_loss:\t{}".format(target_name, history.history["val_loss"]))
     # 可視化
     #plot_history(history, number, target_name)
     return model
 
+def keras_train(target_name, n_splits = 2):
+    logger.info("start train for {}".format(target_name))
 
-
-
-def keras_train(target_name='is_tansyo'):
     final_df = pd.read_csv("csv/final_data.csv", sep=",")
     train_df, test_df = train_test_time_split(final_df)
     X_train, Y_train = label_split_and_drop(train_df, target_name)
@@ -130,7 +124,6 @@ def keras_train(target_name='is_tansyo'):
     predict_proba_results = predict_proba_results.reshape(len(Y_test),1)
 
     # 時系列データで有ることを考慮してCVを切る
-    n_splits = 3
     if n_splits >= 2:
         tscv = TimeSeriesSplit(n_splits=n_splits)
         number = 0
@@ -141,7 +134,7 @@ def keras_train(target_name='is_tansyo'):
             val_label=Y_train[val_index]
             model = train_model(train_data,train_label,val_data,val_label,target_name, number=number)
             # 予測値
-            predict_proba_results = model.predict_proba(X_test) /n_splits
+            predict_proba_results = model.predict_proba(X_test) / n_splits
             number += 1
     elif n_splits == 1 :
         train_size = int(len(Y_train) * 0.8)
@@ -150,7 +143,7 @@ def keras_train(target_name='is_tansyo'):
         val_data = X_train[train_size:len(Y_train)]
         val_label = Y_train[train_size:len(Y_train)]
         model = train_model(train_data,train_label,val_data,val_label,target_name)
-        predict_proba_results = model.predict_proba(X_test) /n_splits
+        predict_proba_results = model.predict_proba(X_test) / n_splits
 
     with StringIO() as buf:
             # StringIOに書き込む
@@ -159,12 +152,8 @@ def keras_train(target_name='is_tansyo'):
             text = buf.getvalue()
     logger.info("model summary:\n{}".format(text))
 
-    # 結果の保存
+
     predict_proba_results = predict_proba_results.flatten()
-    print(predict_proba_results)
-    se = pd.Series(data=predict_proba_results, name="predict_{}".format(target_name), dtype='float')
-    predicted_test_df = pd.concat([test_df, se], axis=1)
-    predicted_test_df.to_csv("predict/{}_predicted_test.csv".format(target_name), index=False)
 
     # test データでのloglossを確認
     logger.info("{} test_log_loss:\t\t{}".format(target_name, log_loss(Y_test,  predict_proba_results)))
@@ -173,16 +162,24 @@ def keras_train(target_name='is_tansyo'):
     predict_results = np.where(predict_proba_results > 0.5, 1, 0) # 確率に応じて0,1に変換
     logger.info("{} confusion_matrix:\n{}\n".format(target_name, confusion_matrix(Y_test, predict_results)))
 
+    # 結果の保存のためにシリーズにする
+    return pd.Series(data=predict_proba_results, name="predict_{}".format(target_name), dtype='float')
+
 
 if __name__ == '__main__':
     try:
         formatter_func = "%(asctime)s - %(module)s.%(funcName)s [%(levelname)s]\t%(message)s" # フォーマットを定義
         logging.basicConfig(filename='logfile/'+OWN_FILE_NAME+'.logger.log', level=logging.INFO, format=formatter_func)
-        logger.info("start train!")
-        logger.info("start tansyo")
-        keras_train('is_tansyo')
-        logger.info("start hukusyo")
-        keras_train('is_hukusyo')
+
+        is_tansyo_se = keras_train('is_tansyo')
+        is_hukusyo_se = keras_train('is_hukusyo')
+
+        # 結果の保存
+        final_df = pd.read_csv("csv/final_data.csv", sep=",")
+        _, test_df = train_test_time_split(final_df)
+        predicted_test_df = pd.concat([test_df, is_tansyo_se,is_hukusyo_se], axis=1)
+        predicted_test_df.to_csv("predict/{}_best_predicted_test.csv".format(OWN_FILE_NAME), index=False)
+
         send_line_notification(OWN_FILE_NAME+" end!")
     except Exception as e:
         t, v, tb = sys.exc_info()
