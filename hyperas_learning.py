@@ -72,13 +72,13 @@ def create_model_is_tansyo(X_train, Y_train, X_test, Y_test):
     val_label = Y_train[train_size:len(Y_train)]
 
     callbacks = []
-    callbacks.append(EarlyStopping(monitor='val_loss', patience=3))
+    callbacks.append(EarlyStopping(monitor='val_loss', patience=2))
 
     model = Sequential()
     model.add(Dense({{choice([256, 512])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu", input_dim=train_data.shape[1]))
     model.add(Dropout({{uniform(0, 0.5)}}))
     model.add(Dense({{choice([64, 128, 256])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
-    model.add(Dropout({{uniform(0, 0.5)}}))
+    model.add(Dropout({{uniform(0, 0.3)}}))
 
     if {{choice(['three', 'four'])}} == 'three':
         pass
@@ -97,7 +97,7 @@ def create_model_is_tansyo(X_train, Y_train, X_test, Y_test):
         train_label,
         validation_data=(val_data, val_label),
         epochs=30,
-        batch_size=64,
+        batch_size=256,
         callbacks=callbacks)
 
     val_loss, val_acc = model.evaluate(X_test, Y_test, verbose=0)
@@ -113,18 +113,18 @@ def create_model_is_hukusyo(X_train, Y_train, X_test, Y_test):
     val_label = Y_train[train_size:len(Y_train)]
 
     callbacks = []
-    callbacks.append(EarlyStopping(monitor='val_loss', patience=3))
+    callbacks.append(EarlyStopping(monitor='val_loss', patience=2))
 
     model = Sequential()
-    model.add(Dense({{choice([256,512,1024])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu", input_dim=train_data.shape[1]))
-    model.add(Dropout({{uniform(0, 0.5)}}))
-    model.add(Dense({{choice([64, 128, 256])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
+    model.add(Dense({{choice([512,1024])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu", input_dim=train_data.shape[1]))
+    model.add(Dropout({{uniform(0, 0.3)}}))
+    model.add(Dense({{choice([128, 256, 512])}}, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
     model.add(Dropout({{uniform(0, 0.5)}}))
 
     if {{choice(['three', 'four'])}} == 'three':
         pass
     elif {{choice(['three', 'four'])}} == 'four':
-        model.add(Dense(16, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
+        model.add(Dense(8, kernel_regularizer=keras.regularizers.l2(0.001), activation="relu"))
         model.add(Dropout({{uniform(0, 0.5)}}))
 
     model.add(Dense(1, activation="sigmoid"))
@@ -138,7 +138,7 @@ def create_model_is_hukusyo(X_train, Y_train, X_test, Y_test):
         train_label,
         validation_data=(val_data, val_label),
         epochs=30,
-        batch_size=64,
+        batch_size=256,
         callbacks=callbacks)
 
     val_loss, val_acc = model.evaluate(X_test, Y_test, verbose=0)
