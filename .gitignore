@@ -4,3 +4,4 @@
 /predict/*predicted*.csv
 *.log
 *.gz
+.ipynb*

@@ -19,8 +19,6 @@ RACR_URL_DIR = "race_url"
 import logging
 logger = logging.getLogger(__name__) #ファイルの名前を渡す
 
-
-
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select,WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -116,8 +114,6 @@ def get_race_url_by_year_and_mon(driver, year, month):
                 for row in range(1, len(all_rows)):
                     race_href = all_rows[row].find_elements_by_tag_name("td")[4].find_element_by_tag_name("a").get_attribute("href")
                     f.write(race_href+"\n")
-
-                # If the driver can click, do so. If not, break loop.
                 try:
                     target = driver.find_elements_by_link_text("次")[0]
                     driver.execute_script("arguments[0].click();", target) #javascriptでクリック処理

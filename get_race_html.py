@@ -1,5 +1,5 @@
 """
-race_urlに含まれるURLを利用して、htmlを取得する
+race_urlディレクトリに含まれるURLを利用して、htmlを取得する
 """
 import datetime
 import pytz
@@ -9,7 +9,6 @@ import requests
 from bs4 import BeautifulSoup
 
 import time
-
 import os
 from os import path
 OWN_FILE_NAME = path.splitext(path.basename(__file__))[0]
@@ -43,7 +42,7 @@ def get_race_html_by_year_and_mon(year,month):
 
         file_list = os.listdir(save_dir) # get all file names
 
-        # 取得すべき数と保持している数が違う場合のみ
+        # 取得すべき数と既に保持している数が違う場合のみ行う
         if len(urls) != len(file_list):
             logger.info("getting htmls ("+str(year) +" "+ str(month) + ")")
             for url in urls:
@@ -58,7 +57,6 @@ def get_race_html_by_year_and_mon(year,month):
                     with open(save_file_path, 'w') as file:
                         file.write(html)
             logging.info("saved " + str(len(urls)) +" htmls ("+str(year) +" "+ str(month) + ")")
-
         else:
             logging.info("already have " + str(len(urls)) +" htmls ("+str(year) +" "+ str(month) + ")")
 
