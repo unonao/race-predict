@@ -185,7 +185,7 @@ def get_rade_and_horse_data_by_html(race_id, html):
             race_list.append("0")
 
     # umatan
-    race_list.append(pay_back2[1].find("td", class_="txt_r").get_text()) #renhuku3
+    race_list.append(pay_back2[1].find("td", class_="txt_r").get_text()) #umatan
 
     race_list.append(pay_back2[2].find("td", class_="txt_r").get_text()) #renhuku3
     try:
