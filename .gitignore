@@ -1,7 +1,10 @@
 *.html
-/csv/
-/model/*predicted*.csv
-/predict/*predicted*.csv
+/csv*/
+/*html/
+/*url/
+/model/
+/pickle/
+/predict/
 *.log
 *.gz
 .ipynb*
